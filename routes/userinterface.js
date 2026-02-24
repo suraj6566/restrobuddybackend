@@ -25,27 +25,50 @@ router.post('/user_fetch_cityid',function(req,res){
     }
   
   })
-router.post('/user_fetch_restaurant_by_city',function(req,res){
-    try{
-     pool.query("select R.*,(select S.statename from states S where S.stateid=R.stateid) as statename,(select C.cityname from cities C where C.cityid=R.cityid) as cityname  from restaurant R where R.cityid=?",[req.body.cityid],function(error,result){
-      if(error)
-        { console.log("error",error)
-         res.status(500).json({message:'Database error, Pls contact database administrator...',status:false})
-        }
-        else
-        {
-         res.status(200).json({message:'Success',data:result,status:true})
-          }
-  
-     })
-  
-    }catch(e)
-    {
-  
-      res.status(500).json({data:[],message:'Critical error, Pls contact database administrator...',status:false})
+
+router.post('/user_fetch_restaurant_by_city', async (req, res) => {
+  try {
+    console.log("📥 BODY:", req.body);
+
+    // ✅ Step 1: get & validate cityid
+    const cityid = Number(req.body.cityid);
+
+    if (!cityid || isNaN(cityid)) {
+      return res.status(400).json({
+        message: "Invalid cityid",
+        status: false
+      });
     }
-  
-  })
+
+    // ✅ Step 2: query (promise version - better)
+    const [result] = await pool.promise().query(
+      `SELECT R.*, 
+              S.statename, 
+              C.cityname
+       FROM restaurant R
+       LEFT JOIN states S ON S.stateid = R.stateid
+       LEFT JOIN cities C ON C.cityid = R.cityid
+       WHERE R.cityid = ?`,
+      [cityid]
+    );
+
+    // ✅ Step 3: response
+    return res.status(200).json({
+      message: "Success",
+      data: result,
+      status: true
+    });
+
+  } catch (error) {
+    console.error("❌ ERROR:", error);
+
+    return res.status(500).json({
+      message: "Server Error",
+      error: error.message,
+      status: false
+    });
+  }
+});
 
 router.post('/user_fetch_ambience_by_city',function(req,res){
     try{
