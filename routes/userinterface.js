@@ -1,57 +1,36 @@
-var express = require('express');
-var router = express.Router();
-var pool = require('./pool.js'); // ye db.js hai (promise pool)
+const express = require('express');
+const router = express.Router();
+const pool = require('./pool.js');
 
-// ✅ 1. fetch city id
+// ================== CITY ==================
 router.post('/user_fetch_cityid', async (req, res) => {
   try {
     const { cityname } = req.body;
 
     if (!cityname) {
-      return res.status(400).json({
-        message: "cityname required",
-        status: false
-      });
+      return res.status(400).json({ message: "City name required", status: false });
     }
 
     const [result] = await pool.query(
-      "SELECT * FROM cities WHERE cityname=?",
+      "SELECT * FROM cities WHERE cityname = ?",
       [cityname]
     );
 
-    if (result.length === 0) {
-      return res.status(404).json({
-        message: "City not found",
-        status: false
-      });
-    }
+    res.json({ message: "Success", data: result[0] || {}, status: true });
 
-    res.status(200).json({
-      message: "Success",
-      data: result[0],
-      status: true
-    });
-
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({
-      message: "Server Error",
-      status: false
-    });
+  } catch (err) {
+    res.status(500).json({ message: "Server Error", status: false });
   }
 });
 
 
-// ✅ 2. fetch restaurant by city
+// ================== RESTAURANT ==================
 router.post('/user_fetch_restaurant_by_city', async (req, res) => {
   try {
     const cityid = Number(req.body.cityid);
 
     if (!cityid || isNaN(cityid)) {
-      return res.status(400).json({
-        message: "Invalid cityid",
-        status: false
-      });
+      return res.status(400).json({ message: "Invalid cityid", status: false });
     }
 
     const [result] = await pool.query(
@@ -63,110 +42,131 @@ router.post('/user_fetch_restaurant_by_city', async (req, res) => {
       [cityid]
     );
 
-    res.status(200).json({
-      message: "Success",
-      data: result,
-      status: true
-    });
+    res.json({ message: "Success", data: result, status: true });
 
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({
-      message: "Server Error",
-      status: false
-    });
+  } catch (err) {
+    res.status(500).json({ message: "Server Error", status: false });
   }
 });
 
 
-// ✅ 3. ambience by city
+// ================== AMBIENCE ==================
 router.post('/user_fetch_ambience_by_city', async (req, res) => {
   try {
-    const { cityid } = req.body;
+    const cityid = Number(req.body.cityid);
 
     const [result] = await pool.query(
-      `SELECT R.*, RP.*, T.*,
-      (SELECT S.statename FROM states S WHERE S.stateid=R.stateid) as statename,
-      (SELECT C.cityname FROM cities C WHERE C.cityid=R.cityid) as cityname
-      FROM restaurant R
-      JOIN restaurantpictures RP ON R.restaurantid=RP.restaurantid
-      JOIN timing T ON R.restaurantid=T.restaurantid
-      WHERE RP.picturetype='Ambience' AND R.cityid=?`,
+      `SELECT R.*, RP.*, t.*
+       FROM restaurant R
+       JOIN restaurantpictures RP ON R.restaurantid = RP.restaurantid
+       JOIN timing t ON R.restaurantid = t.restaurantid
+       WHERE RP.picturetype='Ambience' AND R.cityid=?`,
       [cityid]
     );
 
     res.json({ message: "Success", data: result, status: true });
 
-  } catch (error) {
-    console.error(error);
+  } catch (err) {
     res.status(500).json({ message: "Server Error", status: false });
   }
 });
 
 
-// ✅ 4. category count
-router.post('/fetch_category_count', async (req, res) => {
+// ================== RESTAURANT DETAILS ==================
+router.post('/user_fetch_ambience_by_restaurantid', async (req, res) => {
   try {
-    const { restaurantid } = req.body;
+    const restaurantid = Number(req.body.restaurantid);
 
     const [result] = await pool.query(
-      `SELECT category.categoryid, category.categoryname,
-       COUNT(*) as count_category
-       FROM category, subcategory
-       WHERE category.categoryid=subcategory.categoryid
-       AND category.restaurantid=?
-       GROUP BY category.categoryid, category.categoryname`,
+      `SELECT R.*, RP.*, t.*
+       FROM restaurant R
+       JOIN restaurantpictures RP ON R.restaurantid = RP.restaurantid
+       JOIN timing t ON R.restaurantid = t.restaurantid
+       WHERE RP.picturetype='Ambience' AND RP.restaurantid=?`,
       [restaurantid]
+    );
+
+    res.json({ message: "Success", data: result[0] || {}, status: true });
+
+  } catch (err) {
+    res.status(500).json({ message: "Server Error", status: false });
+  }
+});
+
+
+// ================== CATEGORY COUNT ==================
+router.post('/fetch_category_count', async (req, res) => {
+  try {
+    const [result] = await pool.query(
+      `SELECT category.categoryid, category.categoryname, COUNT(*) as count
+       FROM category
+       JOIN subcategory ON category.categoryid=subcategory.categoryid
+       WHERE category.restaurantid=?
+       GROUP BY category.categoryid`,
+      [req.body.restaurantid]
     );
 
     res.json({ message: "Success", data: result, status: true });
 
-  } catch (error) {
-    console.error(error);
+  } catch (err) {
     res.status(500).json({ message: "Server Error", status: false });
   }
 });
 
 
-// ✅ 5. fetch food
+// ================== FOOD ==================
 router.post('/fetch_all_food_by_category', async (req, res) => {
   try {
     const { categoryid, restaurantid } = req.body;
 
     const [result] = await pool.query(
-      `SELECT F.*, R.*
-       FROM food F, restaurant R
-       WHERE F.restaurantid=R.restaurantid
-       AND F.categoryid=?
-       AND F.restaurantid=?`,
+      `SELECT * FROM food 
+       WHERE categoryid=? AND restaurantid=?`,
       [categoryid, restaurantid]
     );
 
     res.json({ message: "Success", data: result, status: true });
 
-  } catch (error) {
-    console.error(error);
+  } catch (err) {
     res.status(500).json({ message: "Server Error", status: false });
   }
 });
 
 
-// ✅ 6. user signup
+// ================== USER SIGNIN ==================
+router.post('/usersignin', async (req, res) => {
+  try {
+    const { email, fullname } = req.body;
+
+    const [result] = await pool.query(
+      "INSERT INTO signin (email, fullname, createdate) VALUES (?,?,?)",
+      [email, fullname, new Date()]
+    );
+
+    res.json({ message: "Success", data: result, status: true });
+
+  } catch (err) {
+    res.status(500).json({ message: "Server Error", status: false });
+  }
+});
+
+
+// ================== SUBMIT USER ==================
 router.post('/submit_user', async (req, res) => {
   try {
     const { mobileno, email_id, username } = req.body;
 
-    await pool.query(
+    const [result] = await pool.query(
       "INSERT INTO users VALUES (?,?,?)",
       [mobileno, email_id, username]
     );
 
     res.json({ message: "Success", data: req.body, status: true });
 
-  } catch (error) {
-    if (error.errno === 1062) {
+  } catch (err) {
+    if (err.errno === 1062) {
       return res.status(400).json({
-        message: "User already exists",
+        message: "Already exists",
         status: false
       });
     }
@@ -176,7 +176,7 @@ router.post('/submit_user', async (req, res) => {
 });
 
 
-// ✅ 7. search user
+// ================== SEARCH USER ==================
 router.post('/search_user', async (req, res) => {
   try {
     const { email_id, mobileno } = req.body;
@@ -186,13 +186,55 @@ router.post('/search_user', async (req, res) => {
       [email_id, mobileno]
     );
 
-    res.json({
-      message: "Success",
-      data: result,
-      status: result.length > 0
-    });
+    res.json({ message: "Success", data: result, status: true });
 
-  } catch (error) {
+  } catch (err) {
+    res.status(500).json({ message: "Server Error", status: false });
+  }
+});
+
+
+// ================== SUBMIT ADDRESS (IMPORTANT 🔥) ==================
+router.post('/submit_user_address', async (req, res) => {
+  try {
+    const {
+      mobileno,
+      emailid,
+      fullname,
+      state,
+      city,
+      addressone,
+      addresstwo,
+      landmark,
+      pincode
+    } = req.body;
+
+    const [result] = await pool.query(
+      `INSERT INTO useraddress 
+      (mobileno, emailid, fullname, state, city, addressone, addresstwo, landmark, pincode)
+      VALUES (?,?,?,?,?,?,?,?,?)`,
+      [mobileno, emailid, fullname, state, city, addressone, addresstwo, landmark, pincode]
+    );
+
+    res.json({ message: "Success", data: result, status: true });
+
+  } catch (err) {
+    res.status(500).json({ message: "Server Error", status: false });
+  }
+});
+
+
+// ================== GET ADDRESS ==================
+router.post('/user_address', async (req, res) => {
+  try {
+    const [result] = await pool.query(
+      "SELECT * FROM useraddress WHERE mobileno=?",
+      [req.body.mobileno]
+    );
+
+    res.json({ message: "Success", data: result, status: true });
+
+  } catch (err) {
     res.status(500).json({ message: "Server Error", status: false });
   }
 });
