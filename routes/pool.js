@@ -1,23 +1,30 @@
 require("dotenv").config();
-var mysql = require("mysql");
+const mysql = require("mysql2");
 
-var pool = mysql.createPool({
-  host: process.env.DB_HOST,
-  port: process.env.DB_PORT,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
+// create pool
+const pool = mysql.createPool({
+  host: process.env.DB_HOST || "localhost",
+  port: process.env.DB_PORT || 3306,
+  user: process.env.DB_USER || "root",
+  password: process.env.DB_PASSWORD || "",
   database: process.env.DB_NAME,
-  multipleStatements: true,
+  waitForConnections: true,
   connectionLimit: 10,
+  queueLimit: 0,
+  multipleStatements: true,
 });
 
-module.exports = pool;
+// promise wrapper (IMPORTANT 🔥)
+const promisePool = pool.promise();
 
+// test connection
 pool.getConnection((err, connection) => {
   if (err) {
-    console.log("DB Connection Error:", err);
+    console.error("❌ DB Connection Error:", err.message);
   } else {
-    console.log("DB Connected Successfully 🚀");
+    console.log("✅ DB Connected Successfully 🚀");
     connection.release();
   }
 });
+
+module.exports = promisePool;
