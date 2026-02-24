@@ -25,27 +25,48 @@ router.post('/user_fetch_cityid',function(req,res){
     }
   
   })
-router.post('/user_fetch_restaurant_by_city',function(req,res){
-    try{
-     pool.query("select R.*,(select S.statename from states S where S.stateid=R.stateid) as statename,(select C.cityname from cities C where C.cityid=R.cityid) as cityname  from restaurant R where R.cityid=?",[req.body.cityid],function(error,result){
-      if(error)
-        { console.log("error",error)
-         res.status(500).json({message:'Database error, Pls contact database administrator...',status:false})
-        }
-        else
-        {
-         res.status(200).json({message:'Success',data:result,status:true})
-          }
-  
-     })
-  
-    }catch(e)
-    {
-  
-      res.status(500).json({data:[],message:'Critical error, Pls contact database administrator...',status:false})
-    }
-  
-  })
+
+  router.post('/user_fetch_restaurant_by_city', function(req, res) {
+  try {
+
+    console.log("📥 BODY:", req.body);
+
+    pool.query(`
+      SELECT R.*, 
+      S.statename, 
+      C.cityname
+      FROM restaurant R
+      LEFT JOIN states S ON S.stateid = R.stateid
+      LEFT JOIN cities C ON C.cityid = R.cityid
+      WHERE R.cityid = ?
+    `, [Number(req.body.cityid)], function(error, result) {
+
+      if (error) {
+        console.log("❌ MYSQL ERROR FULL:", error);
+        return res.status(500).json({
+          message: error.sqlMessage,
+          status: false
+        });
+      }
+
+      // ✅ THIS WAS MISSING
+      return res.status(200).json({
+        message: "Success",
+        data: result,
+        status: true
+      });
+
+    });
+
+  } catch (e) {
+    console.log("❌ CATCH ERROR:", e);
+    res.status(500).json({
+      data: [],
+      message: 'Critical error',
+      status: false
+    });
+  }
+});
 
 router.post('/user_fetch_ambience_by_city',function(req,res){
     try{

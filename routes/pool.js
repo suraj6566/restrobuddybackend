@@ -12,3 +12,12 @@ var pool = mysql.createPool({
 });
 
 module.exports = pool;
+
+pool.getConnection((err, connection) => {
+  if (err) {
+    console.log("DB Connection Error:", err);
+  } else {
+    console.log("DB Connected Successfully 🚀");
+    connection.release();
+  }
+});
