@@ -1,0 +1,27 @@
+# node modules
+node_modules/
+
+# env file (VERY IMPORTANT)
+.env
+
+# logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# build
+dist/
+build/
+
+# # uploads
+# public/uploads/
+
+# # ❗ ADD THIS (IMPORTANT)
+# public/images/
+
+*.exe
+public/images/*.exe
