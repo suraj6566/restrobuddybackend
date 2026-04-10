@@ -16,6 +16,7 @@ var timingRouter = require('./routes/timing');
 var adminRouter = require('./routes/admin');
 var userinterfaceRouter = require('./routes/userinterface');
 var restaurantpicturesRouter = require('./routes/restaurantpictures');
+var apiRouter = require('./routes/api');
 
 var app = express();
 
@@ -45,6 +46,7 @@ app.use('/restaurant', restaurantRouter);
 app.use('/category', categoryRouter);
 app.use('/subcategory', subcategoryRouter);
 app.use('/food', foodRouter);
+app.use('/api', apiRouter);
 app.use('/timing', timingRouter);
 app.use('/admin', adminRouter);
 app.use('/userinterface', userinterfaceRouter);

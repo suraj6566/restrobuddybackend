@@ -3,6 +3,7 @@ var router = express.Router()
 var pool = require('./pool')
 var multer = require('./multer')
 const upload = require('./multer')
+const { getFoodByRestaurant } = require('../controllers/foodController')
 
 // fetch all categories
 router.get('/fetch_all_category', function (req, res, next) {
@@ -105,6 +106,8 @@ router.get('/fetch_all_food_data',function(req,res,next){
           res.status(500).json({data:[],message:'Critical error, pls contact database administration.....',status:false})
         }
 })
+
+router.get('/:id', getFoodByRestaurant)
 
 router.post('/edit_food_data',function(req,res,next){
     try

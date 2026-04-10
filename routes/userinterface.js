@@ -72,7 +72,7 @@ router.post('/user_fetch_ambience_by_city', function(req, res) {
 
 router.post('/user_fetch_ambience_by_restaurantid',function(req,res){
     try{
-        pool.query("select R.*,RP.*,t.*,(select group_concat(c.categoryname) from category c where c.restaurantid=22) as listcategory,(select S.statename from states S where  S.stateid=R.stateid) as statename ,(select C.cityname from cities C where C.cityid=R.cityid) as cityname from restaurant R, restaurantpictures rp,timing t where R.restaurantid=rp.restaurantid and r.restaurantid=t.restaurantid and rp.picturetype='Ambience' and rp.restaurantid=?",[req.body.restaurantid], function(error,result){
+        pool.query("select R.*, rp.*, t.*, (select group_concat(c.categoryname) from category c where c.restaurantid=?) as listcategory, (select S.statename from states S where S.stateid=R.stateid) as statename, (select C.cityname from cities C where C.cityid=R.cityid) as cityname from restaurant R inner join restaurantpictures rp on R.restaurantid=rp.restaurantid inner join timing t on R.restaurantid=t.restaurantid where rp.picturetype='Ambience' and rp.restaurantid=?",[req.body.restaurantid, req.body.restaurantid], function(error,result){
       if(error)
         { console.log("error",error)
          res.status(500).json({message:'Database error, pls contact database administrator...',status:false})
